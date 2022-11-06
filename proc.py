@@ -1,14 +1,25 @@
-#byte addressable
-# instruction_memory={0:'00000000101010011000100001100011'}
-# instruction_memory={0:'00000000011100110000001010110011'} #add x5,x6,x7
+# byte addressable
+# instruction_memory={0:'00000000011100110000001010110011'}#add x5,x6,x7
 # instruction_memory={0:'11111100111000001000011110010011'} #addi x15,x1,-50
 # instruction_memory={0:'00000000100000010010011100000011'} #lw x14, 8(x2)
 # instruction_memory={0:'00000000111000010010010000100011'} #st x14, 8(x2)
 
 # instruction_memory={0:'00000000101010011000100001100011'} #beq x19,x10,16 (bytes)
-# 
+
 # instruction_memory={0:'00000000000000000000000001111011'} #STORENOC
-instruction_memory={0:'00000000001000001000010001111111'}
+# instruction_memory={0:'00000000001000001000010001111111'} #LOADNOC R1,R2,8
+
+
+instruction_memory={0:'00000000011100110000001010110011',
+4:'11111100111000001000011110010011',
+8:'00000000100000010010011100000011',
+12:'00000000111000010010010000100011',
+16:'00000000000000000000000001111011',
+20:'00000000001000001000010001111111'} 
+
+# instruction_memory={0:'00000000101010011000100001100011'} #beq x19,x10,16 (bytes)
+
+
 #
 # 1111011 -> STORENOC
 # 1111111 -> LOADNOC
@@ -27,7 +38,8 @@ def fetch():
     registers['ir'] = instruction_memory[PC]
 
 def decode():
-    
+    global signals
+    signals = dict.fromkeys(signals, 0)
     registers['rd'] = int(registers['ir'][20:25],2)
     registers['rs1'] = int(registers['ir'][12:17],2)
     registers['rs2'] = int(registers['ir'][7:12],2)
@@ -61,7 +73,6 @@ def decode():
         signals['isSTORENOC']=1
     else:
         signals['isImm']=1
-        print("opcode is ",registers['ir'][25:32])
         if(registers['ir'][25:32]=='0000011'):
             signals['isLW']=1
         if(registers['ir'][25:32]=='0100011'):
@@ -81,7 +92,6 @@ def execute():
     op2 = GPR[registers['rs2']]
     if(signals['isImm']):
         op2 = registers['immx']
-        print("op2 from imm:",op2)
     if(signals['isAdd'] or signals['isLW'] or signals['isST'] or signals['isLOADNOC']):
         res = op1+op2
     if(signals['isSub']):
@@ -128,10 +138,12 @@ def CPU():
     writeback()
 GPR[1] = 16384
 GPR[2] = 4444
-CPU()
-print(signals)
-print(registers)
-print(GPR)
-for i in range(len(data_memory)):
-    if(data_memory[i]!=0):
-        print(i,' : ',data_memory[i])
+
+for i in range(6):
+    CPU()
+    print(signals)
+    print(registers)
+    print(GPR)
+    for i in range(len(data_memory)):
+        if(data_memory[i]!=0):
+            print(i,' : ',data_memory[i])
