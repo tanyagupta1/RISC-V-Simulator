@@ -10,12 +10,12 @@
 # instruction_memory={0:'00000000001000001000010001111111'} #LOADNOC R1,R2,8
 
 
-instruction_memory={0:'00000000011100110000001010110011',
-4:'11111100111000001000011110010011',
-8:'00000000100000010010011100000011',
-12:'00000000111000010010010000100011',
-16:'00000000000000000000000001111011',
-20:'00000000001000001000010001111111'} 
+# instruction_memory={0:'00000000011100110000001010110011',
+# 4:'11111100111000001000011110010011',
+# 8:'00000000100000010010011100000011',
+# 12:'00000000111000010010010000100011',
+# 16:'00000000000000000000000001111011',
+# 20:'00000000001000001000010001111111'} 
 
 # instruction_memory={0:'00000000101010011000100001100011'} #beq x19,x10,16 (bytes)
 
@@ -24,6 +24,8 @@ instruction_memory={0:'00000000011100110000001010110011',
 # 1111011 -> STORENOC
 # 1111111 -> LOADNOC
 # LOADNOC is imm[11:5] rs2 rs1 000 imm[4:0] 1111111
+
+import sys
 data_memory=[0]*5000
 GPR = [0]*32
 registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
@@ -139,7 +141,12 @@ def CPU():
 GPR[1] = 16384
 GPR[2] = 4444
 
-for i in range(6):
+with open(sys.argv[1]) as file:
+    lines = [line.rstrip() for line in file]
+instruction_memory={}
+for i in range(len(lines)):
+    instruction_memory[4*i] = lines[i]
+for i in range(len(lines)):
     CPU()
     print(signals)
     print(registers)
