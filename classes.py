@@ -1,14 +1,5 @@
 
 import sys
-# data_memory=[0]*5000
-# GPR = [0]*32
-# registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
-# signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-# 'isSTORENOC':0, 'isLOADNOC':0}
-# mem_res=0
-# op1=0
-# op2=0
-# res=0
 
 
 class Registers():
@@ -59,9 +50,8 @@ class CPU():
     def fetch(self):
         PC = self.registers['pc']
         self.registers['ir'] = self.instruction_memory.read_memory(PC)
-        print(self.registers)
 
-    def decode():
+    def decode(self):
 
         self.signals = dict.fromkeys(self.signals, 0)
         self.registers['rd'] = int(self.registers['ir'][20:25],2)
@@ -73,9 +63,9 @@ class CPU():
             self.registers['immx']=-2048
         if((self.registers['ir'][25:32]=='0000011') or (self.registers['ir'][25:32]=='0010011')):
             self.registers['immx']+=int(self.registers['ir'][1:12],2)
-        elif((registers['ir'][25:32]=='0100011') or (registers['ir'][25:32]=='1111111')):
+        elif((self.registers['ir'][25:32]=='0100011') or (self.registers['ir'][25:32]=='1111111')):
             self.registers['immx']+=int(self.registers['ir'][1:7]+self.registers['ir'][20:25],2)
-        elif(registers['ir'][25:32]=='1100011'):
+        elif(self.registers['ir'][25:32]=='1100011'):
             self.registers['immx']=int(self.registers['ir'][0]+self.registers['ir'][24]+self.registers['ir'][1:7]+self.registers['ir'][20:24],2)
 
 
@@ -110,10 +100,10 @@ class CPU():
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
         
-    def execute():
+    def execute(self):
         
-        self.op1 = self.GPR[registers['rs1']]
-        self.op2 = self.GPR[registers['rs2']]
+        self.op1 = self.GPR.read_reg(self.registers['rs1'])
+        self.op2 = self.GPR.read_reg(self.registers['rs2'])
         if(self.signals['isImm']):
             self.op2 = self.registers['immx']
         if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
@@ -128,45 +118,50 @@ class CPU():
             self.res = self.op1 << self.op2
         if(self.signals['isSRA']):
             self.res = self.op1 >> self.op2
-        print("op1: ",op1, " op2: ",op2, " res: ",res)
+        print("op1: ",self.op1, " op2: ",self.op2, " res: ",self.res)
 
-    def memory():
+    def memory(self):
         if(self.signals['isLW']):
-            self.mem_res = self.data_memory[res>>2]
+            self.mem_res = self.data_memory.read_memory(self.res>>2)
         if(self.signals['isST'] or self.signals['isLOADNOC']):
-            self.data_memory[res>>2] = self.GPR[registers['rs2']]
+            # self.data_memory[res>>2] = self.GPR[registers['rs2']]
+            self.data_memory.write_memory(self.res>>2,self.GPR.read_reg(self.registers['rs2']))
         if(self.signals['isSTORENOC']):
-            self.data_memory[4100]=1 # 4010 hex byte = 16^3+4 decimal word (4bytes)
+            self.data_memory.write_memory(4100,1) # 4010 hex byte = 16^3+4 decimal word (4bytes)
     
-    def writeback():
+    def writeback(self):
         if(self.signals['isLW']):
-            self.GPR[registers['rd']] = self.mem_res
+            # self.GPR[registers['rd']] = self.mem_res
+            self.GPR.write_reg(self.registers['rd'],self.mem_res)
         if(self.signals['isOr']or self.signals['isAnd'] or self.signals['isSLL'] or self.signals['isSRA'] or self.signals['isAdd'] or self.signals['isSub']):
-            self.GPR[registers['rd']] = self.res
+            # self.GPR[registers['rd']] = self.res
+            self.GPR.write_reg(self.registers['rd'],self.res)
             #update PC
-        if(signals['isBEQ']==1):
+        if(self.signals['isBEQ']==1):
             self.registers['pc'] = self.registers['pc']+self.registers['immx']
         else:
             self.registers['pc'] = self.registers['pc']+4
 
-    def cpu_clock_edge():
-        fetch()
-        decode()
-        execute()
-        memory()
-        writeback()
+    def cpu_clock_edge(self):
+        self.fetch()
+        self.decode()
+        self.execute()
+        self.memory()
+        self.writeback()
+        print("signals")
+        print(self.signals)
+        print("GPR")
+        print(self.GPR.GPR)
+        print("registers")
+        print(self.registers)
+        print("data memory")
+        for i in range(len(self.data_memory.data_memory)):
+            if(self.data_memory.read_memory(i)!=0):
+                print(i,' : ',self.data_memory.read_memory(i))
+        print()
+        print()
+        print()
 
-# GPR[1] = 16384
-# GPR[2] = 4444
-
-# for i in range(len(lines)):
-#     CPU()
-#     print(signals)
-#     print(registers)
-#     print(GPR)
-#     for i in range(len(data_memory)):
-#         if(data_memory[i]!=0):
-#             print(i,' : ',data_memory[i])
 
 
 
@@ -180,5 +175,7 @@ with open(sys.argv[1]) as file:
 for i in range(len(lines)):
     instruction_memory.write_memory(4*i,lines[i])
 
-# print(my_cpu.instruction_memory.read_memory(64))
-my_cpu.fetch()
+for i in range(6):
+    my_cpu.cpu_clock_edge()
+
+
