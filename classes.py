@@ -36,6 +36,7 @@ class CPU():
     op1=0
     op2=0
     res=0
+    clock =0
     registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
     instruction_memory ={}
@@ -118,7 +119,6 @@ class CPU():
             self.res = self.op1 << self.op2
         if(self.signals['isSRA']):
             self.res = self.op1 >> self.op2
-        print("op1: ",self.op1, " op2: ",self.op2, " res: ",self.res)
 
     def memory(self):
         if(self.signals['isLW']):
@@ -148,6 +148,7 @@ class CPU():
         self.execute()
         self.memory()
         self.writeback()
+        print("Cycle no: ", self.clock)
         print("signals")
         print(self.signals)
         print("GPR")
@@ -161,6 +162,8 @@ class CPU():
         print()
         print()
         print()
+        self.clock +=1
+
 
 
 
