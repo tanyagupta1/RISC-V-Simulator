@@ -96,7 +96,7 @@ class CPU():
                 self.signals['isAdd']=1
             if(self.registers['ir'][25:32]=='1100011'):
                 self.registers['immx'] = self.registers['immx']*2
-                if(self.GPR[registers['rs1']]==self.GPR[registers['rs2']]):
+                if(self.GPR.read_reg(self.registers['rs1'])==self.GPR.read_reg(self.registers['rs2'])):
                     self.signals['isBEQ']=1
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
@@ -176,9 +176,9 @@ with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
 
 for i in range(len(lines)):
-    instruction_memory.write_memory(4*i,lines[i])
+    instruction_memory.write_memory(4*i,lines[i][0:32])
 
-for i in range(6):
+while(my_cpu.registers['pc']<4*len(lines)):
     my_cpu.cpu_clock_edge()
 
 
