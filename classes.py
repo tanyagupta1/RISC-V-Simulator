@@ -172,6 +172,8 @@ instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
 my_cpu = CPU(instruction_memory,data_memory,GPR)
+for i in range(32):
+    GPR.write_reg(i,i)
 with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
 
