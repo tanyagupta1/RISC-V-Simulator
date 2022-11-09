@@ -203,5 +203,8 @@ for i in range(len(lines)):
 
 while(my_cpu.registers['pc']<4*len(lines)):
     my_cpu.cpu_clock_edge()
-
+file1.write("Ending memory state: \n")
+for i in range(len(data_memory.data_memory)):
+    file1.write(str(i)+' : '+str(data_memory.read_memory(i))+'\n')
+file1.write('\n')
 file1.close()
