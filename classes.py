@@ -1,6 +1,6 @@
 
 import sys
-
+import json
 
 class Registers():
     GPR = [0]*32
@@ -10,7 +10,7 @@ class Registers():
         return self.GPR[location]
     
     
-class InstructionMemory():
+class InstructionMemory(): #word addressable
     instruction_memory={}
 
     def write_memory(self,location, value):
@@ -18,7 +18,7 @@ class InstructionMemory():
     def read_memory(self,location):
         return self.instruction_memory[location]
 
-class DataMemory():
+class DataMemory(): #word addressable (length=5000 words)
     data_memory=[0]*5000
 
     def write_memory(self,location, value):
@@ -143,11 +143,14 @@ class CPU():
             self.registers['pc'] = self.registers['pc']+4
 
     def cpu_clock_edge(self):
+        global file1
         self.fetch()
         self.decode()
         self.execute()
         self.memory()
         self.writeback()
+
+
         print("Cycle no: ", self.clock)
         print("signals")
         print(self.signals)
@@ -159,6 +162,24 @@ class CPU():
         for i in range(len(self.data_memory.data_memory)):
             if(self.data_memory.read_memory(i)!=0):
                 print(i,' : ',self.data_memory.read_memory(i))
+        
+        file1.write("Cycle no: "+ str(self.clock)+'\n')
+        file1.write("signals"+'\n')
+        file1.write(json.dumps(self.signals))
+        file1.write('\n')
+        file1.write("GPR\n")
+        file1.write(json.dumps(self.GPR.GPR))
+        file1.write('\n')
+        file1.write("registers\n")
+        file1.write(json.dumps(self.registers))
+        file1.write('\n')
+        file1.write("data memory\n")
+        for i in range(len(self.data_memory.data_memory)):
+            if(self.data_memory.read_memory(i)!=0):
+                file1.write(str(i)+' : '+str(self.data_memory.read_memory(i))+'\n')
+        file1.write('\n')
+        file1.write('\n')
+        file1.write('\n')
         print()
         print()
         print()
@@ -167,7 +188,7 @@ class CPU():
 
 
 
-
+file1 = open("myfile.txt", "w")
 instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
@@ -183,4 +204,4 @@ for i in range(len(lines)):
 while(my_cpu.registers['pc']<4*len(lines)):
     my_cpu.cpu_clock_edge()
 
-
+file1.close()

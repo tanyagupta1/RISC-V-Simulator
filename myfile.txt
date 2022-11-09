@@ -1,0 +1,152 @@
+Cycle no: 0
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 1, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 27, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+registers
+{"pc": 4, "ir": "00000001000111010110011010110011", "I": 0, "rd": 13, "rs1": 26, "rs2": 17, "immx": 0}
+data memory
+
+
+
+Cycle no: 1
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 0, "isAnd": 1, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+registers
+{"pc": 8, "ir": "00000001000111010111011010110011", "I": 0, "rd": 13, "rs1": 26, "rs2": 17, "immx": 0}
+data memory
+
+
+
+Cycle no: 2
+signals
+{"isImm": 0, "isAdd": 1, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 37, 28, 29, 30, 31]
+registers
+{"pc": 12, "ir": "00000001111000111000110110110011", "I": 0, "rd": 27, "rs1": 7, "rs2": 30, "immx": 0}
+data memory
+
+
+
+Cycle no: 3
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 1, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 16, 28, 29, 30, 31]
+registers
+{"pc": 16, "ir": "01000000111111111000110110110011", "I": 0, "rd": 27, "rs1": 31, "rs2": 15, "immx": 0}
+data memory
+
+
+
+Cycle no: 4
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 1, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 31]
+registers
+{"pc": 20, "ir": "00000000111111111001110110110011", "I": 0, "rd": 27, "rs1": 31, "rs2": 15, "immx": 0}
+data memory
+
+
+
+Cycle no: 5
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 1, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 24, "ir": "01000001111100011101111110110011", "I": 0, "rd": 31, "rs1": 3, "rs2": 31, "immx": 0}
+data memory
+
+
+
+Cycle no: 6
+signals
+{"isImm": 1, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 1, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 32, "ir": "00000001111100000000010001100011", "I": 0, "rd": 8, "rs1": 0, "rs2": 31, "immx": 8}
+data memory
+
+
+
+Cycle no: 7
+signals
+{"isImm": 1, "isAdd": 1, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[1043, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 36, "ir": "01000000111100100000000000010011", "I": 0, "rd": 0, "rs1": 4, "rs2": 15, "immx": 1039}
+data memory
+
+
+
+Cycle no: 8
+signals
+{"isImm": 1, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 1, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[1043, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 40, "ir": "00000000100000100010011100000011", "I": 0, "rd": 14, "rs1": 4, "rs2": 8, "immx": 8}
+data memory
+
+
+
+Cycle no: 9
+signals
+{"isImm": 0, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 1, "isLOADNOC": 0}
+GPR
+[1043, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 44, "ir": "00000000000000000000000001111011", "I": 0, "rd": 0, "rs1": 0, "rs2": 0, "immx": 0}
+data memory
+4100 : 1
+
+
+
+Cycle no: 10
+signals
+{"isImm": 1, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 1}
+GPR
+[1043, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 48, "ir": "00000000001011111000010001111111", "I": 0, "rd": 8, "rs1": 31, "rs2": 2, "immx": 8}
+data memory
+2 : 2
+4100 : 1
+
+
+
+Cycle no: 11
+signals
+{"isImm": 1, "isAdd": 0, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 1, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[1043, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 52, "ir": "00000000111100100010010000100011", "I": 0, "rd": 8, "rs1": 4, "rs2": 15, "immx": 8}
+data memory
+2 : 2
+3 : 15
+4100 : 1
+
+
+
+Cycle no: 12
+signals
+{"isImm": 1, "isAdd": 1, "isSub": 0, "isAnd": 0, "isOr": 0, "isSLL": 0, "isSRA": 0, "isLW": 0, "isST": 0, "isBEQ": 0, "isSTORENOC": 0, "isLOADNOC": 0}
+GPR
+[-46, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 1015808, 28, 29, 30, 0]
+registers
+{"pc": 56, "ir": "11111100111000100000000000010011", "I": 0, "rd": 0, "rs1": 4, "rs2": 14, "immx": -50}
+data memory
+2 : 2
+3 : 15
+4100 : 1
+
+
+
