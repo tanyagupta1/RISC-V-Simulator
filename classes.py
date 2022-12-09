@@ -26,34 +26,23 @@ class DataMemory(): #word addressable (length=5000 words)
     def read_memory(self,location):
         return self.data_memory[location]
 
-
-class CPU():
-
-
+class Fetch():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
 'isSTORENOC':0, 'isLOADNOC':0}
-    mem_res=0
-    op1=0
-    op2=0
-    res=0
     clock =0
     registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
-    instruction_memory ={}
-    data_memory=[]
-    GPR=[]
-
-    def __init__(self, im, dm, reg):
-        self.instruction_memory = im
-        self.data_memory = dm
-        self.GPR = reg
-
-    def fetch(self):
+    def run(self,instruction_memory):
         PC = self.registers['pc']
-        self.registers['ir'] = self.instruction_memory.read_memory(PC)
+        self.registers['ir'] = instruction_memory.read_memory(PC)
 
-    def decode(self):
+class Decode():
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
+    clock =0
+    registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
+    def run(self,GPR):
         self.signals = dict.fromkeys(self.signals, 0)
         self.registers['rd'] = int(self.registers['ir'][20:25],2)
         self.registers['rs1'] = int(self.registers['ir'][12:17],2)
@@ -96,68 +85,130 @@ class CPU():
                 self.signals['isAdd']=1
             if(self.registers['ir'][25:32]=='1100011'):
                 self.registers['immx'] = self.registers['immx']*2
-                if(self.GPR.read_reg(self.registers['rs1'])==self.GPR.read_reg(self.registers['rs2'])):
+                if(GPR.read_reg(self.registers['rs1'])==GPR.read_reg(self.registers['rs2'])):
                     self.signals['isBEQ']=1
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
         
-    def execute(self):
-        
-        self.op1 = self.GPR.read_reg(self.registers['rs1'])
-        self.op2 = self.GPR.read_reg(self.registers['rs2'])
-        if(self.signals['isImm']):
-            self.op2 = self.registers['immx']
-        if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
-            self.res = self.op1+self.op2
-        if(self.signals['isSub']):
-            self.res = self.op1-self.op2
-        if(self.signals['isAnd']):
-            self.res = self.op1 & self.op2
-        if(self.signals['isOr']):
-            self.res = self.op1 | self.op2
-        if(self.signals['isSLL']):
-            self.res = self.op1 << self.op2
-        if(self.signals['isSRA']):
-            self.res = self.op1 >> self.op2
+class Execute():
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
 
-    def memory(self):
+    clock =0
+    registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+
+    def run(self,GPR):
+        op1 = GPR.read_reg(self.registers['rs1'])
+        op2 = GPR.read_reg(self.registers['rs2'])
+        if(self.signals['isImm']):
+            op2 = self.registers['immx']
+        if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
+            self.registers['res'] = op1+op2
+        if(self.signals['isSub']):
+            self.registers['res'] = op1-op2
+        if(self.signals['isAnd']):
+            self.registers['res'] = op1 & op2
+        if(self.signals['isOr']):
+            self.registers['res'] = op1 | op2
+        if(self.signals['isSLL']):
+            self.registers['res'] = op1 << op2
+        if(self.signals['isSRA']):
+            self.registers['res'] = op1 >> op2
+
+class Memory():
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
+    clock =0
+    registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+
+    def run(self,data_memory,GPR):
         if(self.signals['isLW']):
-            self.mem_res = self.data_memory.read_memory(self.res>>2)
+            self.registers['mem_res'] = data_memory.read_memory(self.registers['res']>>2)
         if(self.signals['isST'] or self.signals['isLOADNOC']):
             # self.data_memory[res>>2] = self.GPR[registers['rs2']]
-            self.data_memory.write_memory(self.res>>2,self.GPR.read_reg(self.registers['rs2']))
+            data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
         if(self.signals['isSTORENOC']):
-            self.data_memory.write_memory(4100,1) # 4010 hex byte = 16^3+4 decimal word (4bytes)
-    
-    def writeback(self):
+            data_memory.write_memory(4100,1) # 4010 hex byte = 16^3+4 decimal word (4bytes)
+
+class Writeback():
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
+    clock =0
+    registers={'pc':0,'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+
+    def run(self,GPR):
         if(self.signals['isLW']):
-            # self.GPR[registers['rd']] = self.mem_res
-            self.GPR.write_reg(self.registers['rd'],self.mem_res)
+            GPR.write_reg(self.registers['rd'],self.registers['mem_res'])
         if(self.signals['isOr']or self.signals['isAnd'] or self.signals['isSLL'] or self.signals['isSRA'] or self.signals['isAdd'] or self.signals['isSub']):
-            # self.GPR[registers['rd']] = self.res
-            self.GPR.write_reg(self.registers['rd'],self.res)
-            #update PC
+            GPR.write_reg(self.registers['rd'],self.registers['res'])
         if(self.signals['isBEQ']==1):
             self.registers['pc'] = self.registers['pc']+self.registers['immx']
         else:
             self.registers['pc'] = self.registers['pc']+4
 
+class CPU():
+    clock=0
+    instruction_memory ={}
+    data_memory=[]
+    GPR=[]
+    fetch_unit=0
+    decode_unit=0
+    execute_unit=0
+    memory_unit=0
+    writeback_unit=0
+
+
+    def __init__(self, im, dm, reg):
+        self.instruction_memory = im
+        self.data_memory = dm
+        self.GPR = reg
+        self.fetch_unit= Fetch()
+        self.decode_unit= Decode()
+        self.execute_unit= Execute()
+        self.memory_unit = Memory()
+        self.writeback_unit= Writeback()
+
+    def fetch(self,instruction_memory):
+        self.fetch_unit.signals = self.writeback_unit.signals
+        self.fetch_unit.registers = self.writeback_unit.registers
+        self.fetch_unit.run(instruction_memory)
+
+    def decode(self,GPR):
+        self.decode_unit.signals = self.fetch_unit.signals
+        self.decode_unit.registers = self.fetch_unit.registers
+        self.decode_unit.run(GPR)
+
+    def execute(self,GPR):
+        self.execute_unit.signals=self.decode_unit.signals 
+        self.execute_unit.registers=self.decode_unit.registers 
+        self.execute_unit.run(GPR)
+
+    def memory(self,data_memory,GPR):
+        self.memory_unit.signals = self.execute_unit.signals
+        self.memory_unit.registers = self.execute_unit.registers
+        self.memory_unit.run(data_memory,GPR)
+    
+    def writeback(self,GPR):
+        self.writeback_unit.signals = self.memory_unit.signals
+        self.writeback_unit.registers = self.memory_unit.registers
+        self.writeback_unit.run(GPR)
+
     def cpu_clock_edge(self):
         global file1
-        self.fetch()
-        self.decode()
-        self.execute()
-        self.memory()
-        self.writeback()
+        self.fetch(self.instruction_memory)
+        self.decode(self.GPR)
+        self.execute(self.GPR)
+        self.memory(self.data_memory,self.GPR)
+        self.writeback(self.GPR)
 
 
         print("Cycle no: ", self.clock)
         print("signals")
-        print(self.signals)
+        print(self.writeback_unit.signals)
         print("GPR")
         print(self.GPR.GPR)
         print("registers")
-        print(self.registers)
+        print(self.writeback_unit.registers)
         print("data memory")
         for i in range(len(self.data_memory.data_memory)):
             if(self.data_memory.read_memory(i)!=0):
@@ -165,13 +216,13 @@ class CPU():
         
         file1.write("Cycle no: "+ str(self.clock)+'\n')
         file1.write("signals"+'\n')
-        file1.write(json.dumps(self.signals))
+        file1.write(json.dumps(self.writeback_unit.signals))
         file1.write('\n')
         file1.write("GPR\n")
         file1.write(json.dumps(self.GPR.GPR))
         file1.write('\n')
         file1.write("registers\n")
-        file1.write(json.dumps(self.registers))
+        file1.write(json.dumps(self.writeback_unit.registers))
         file1.write('\n')
         file1.write("data memory\n")
         for i in range(len(self.data_memory.data_memory)):
@@ -201,7 +252,7 @@ with open(sys.argv[1]) as file:
 for i in range(len(lines)):
     instruction_memory.write_memory(4*i,lines[i][0:32])
 
-while(my_cpu.registers['pc']<4*len(lines)):
+while(my_cpu.fetch_unit.registers['pc']<4*len(lines)):
     my_cpu.cpu_clock_edge()
 file1.write("Ending memory state: \n")
 for i in range(len(data_memory.data_memory)):
