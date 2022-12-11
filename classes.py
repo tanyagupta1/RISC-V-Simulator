@@ -114,6 +114,7 @@ class Decode():
             self.signals['isImm']=1
             if(self.registers['ir'][25:32]=='0000011'):
                 self.signals['isLW']=1
+                scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][25:32]=='0100011'):
                 self.signals['isST']=1
             if(self.registers['ir'][25:32]=='0010011'):
@@ -183,7 +184,7 @@ class Memory():
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
-    def run(self,data_memory,GPR):
+    def run(self,data_memory,GPR,scoreboard):
         print("MEMORY")
         if(self.registers['ir']==0):
             return
@@ -193,6 +194,8 @@ class Memory():
         print(self.registers)
         if(self.signals['isLW']):
             self.registers['mem_res'] = data_memory.read_memory(self.registers['res']>>2)
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['mem_res']
         if(self.signals['isST'] or self.signals['isLOADNOC']):
             # self.data_memory[res>>2] = self.GPR[registers['rs2']]
             data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
@@ -272,7 +275,7 @@ class CPU():
         self.execute_unit.run(self.GPR,self.scoreboard)
         
     def memory(self):
-        self.memory_unit.run(self.data_memory,self.GPR)
+        self.memory_unit.run(self.data_memory,self.GPR,self.scoreboard)
             
     def writeback(self):
         self.writeback_unit.run(self.GPR)
