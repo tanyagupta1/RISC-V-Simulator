@@ -145,8 +145,10 @@ class Execute():
         print(self.signals)
         print("registers")
         print(self.registers)
-        op1 = GPR.read_reg(self.registers['rs1'])
-        op2 = GPR.read_reg(self.registers['rs2'])
+        # op1 = GPR.read_reg(self.registers['rs1'])
+        # op2 = GPR.read_reg(self.registers['rs2'])
+        op1 = scoreboard.value[self.registers['rs1']]
+        op2 = scoreboard.value[self.registers['rs2']]
         if(self.signals['isImm']):
             op2 = self.registers['immx']
         if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
@@ -333,9 +335,9 @@ file1 = open("myfile.txt", "w")
 instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
-my_cpu = CPU(instruction_memory,data_memory,GPR)
 for i in range(32):
     GPR.write_reg(i,i)
+my_cpu = CPU(instruction_memory,data_memory,GPR)
 with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
 
