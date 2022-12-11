@@ -33,13 +33,13 @@ class Fetch():
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
     def run(self,instruction_memory,pc):
+        PC = pc
+        self.registers['ir'] = instruction_memory.read_memory(PC)
         print("FETCH")
         print("signals")
         print(self.signals)
         print("registers")
         print(self.registers)
-        PC = pc
-        self.registers['ir'] = instruction_memory.read_memory(PC)
 
 class Decode():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
@@ -47,16 +47,16 @@ class Decode():
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
-    def run(self,GPR):
+    scoreboard=[]
+
+    def run(self,GPR,scoreboard):
         
-        print("DECODE")
+        print("DECODE: ",self.registers['ir'])
         if(self.registers['ir']==0):
             return False
+        if(self.registers['ir']=='00000000000000000000000000000000'):
+            return False
         self.signals = dict.fromkeys(self.signals, 0)
-        print("signals")
-        print(self.signals)
-        print("registers")
-        print(self.registers)
 
         if(False):
             return True
@@ -79,16 +79,35 @@ class Decode():
         if(self.registers['ir'][25:32]=='0110011'):
             if(self.registers['ir'][17:20]=='111'):
                 self.signals['isAnd']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='110'):
                 self.signals['isOr']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0000000')):
                 self.signals['isAdd']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0100000')):
                 self.signals['isSub']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='001'):
                 self.signals['isSLL']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='101'):
                 self.signals['isSRA']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return True
+                scoreboard.pending[self.registers['rd']]=True
+        
         elif (self.registers['ir'][25:32]=='1111011'):
             self.signals['isSTORENOC']=1
         else:
@@ -105,7 +124,10 @@ class Decode():
                     self.signals['isBEQ']=1
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
-        
+        print("signals")
+        print(self.signals)
+        print("registers")
+        print(self.registers)
         return False
         
 class Execute():
@@ -115,7 +137,7 @@ class Execute():
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
-    def run(self,GPR):
+    def run(self,GPR,scoreboard):
         print("EXECUTE")
         if(self.registers['ir']==0):
             return
@@ -129,16 +151,29 @@ class Execute():
             op2 = self.registers['immx']
         if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
             self.registers['res'] = op1+op2
+            if(self.signals['isAdd']):
+                scoreboard.pending[self.registers['rd']] = False
+                scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSub']):
             self.registers['res'] = op1-op2
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isAnd']):
             self.registers['res'] = op1 & op2
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isOr']):
             self.registers['res'] = op1 | op2
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSLL']):
             self.registers['res'] = op1 << op2
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSRA']):
             self.registers['res'] = op1 >> op2
+            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.value[self.registers['rd']] = self.registers['res']
 
 class Memory():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
@@ -185,11 +220,26 @@ class Writeback():
         # else:
         #     self.registers['pc'] = self.registers['pc']+4
 
+class Scoreboard():
+    pending = [False]*32
+    value = [0]*32
+
+    def __init__(self,GPR):
+        for i in range(32):
+            self.value[i]=GPR.read_reg(i)
+    
+    def __str__(self):
+        for i in range(32):
+            print("reg: ",i," value: ",self.value[i]," pending: ",self.pending[i])
+        return ""
+
+
 class CPU():
     clock=0
     instruction_memory ={}
     data_memory=[]
     GPR=[]
+    scoreboard=0
     PC=0
     fetch_unit=0
     decode_unit=0
@@ -203,45 +253,48 @@ class CPU():
         self.instruction_memory = im
         self.data_memory = dm
         self.GPR = reg
+        self.scoreboard = Scoreboard(self.GPR)
         self.fetch_unit= Fetch()
         self.decode_unit= Decode()
         self.execute_unit= Execute()
         self.memory_unit = Memory()
         self.writeback_unit= Writeback()
 
-    def fetch(self,instruction_memory,pc):
-        self.fetch_unit.run(instruction_memory,pc)
+    def fetch(self):
+        self.fetch_unit.run(self.instruction_memory,self.PC)
 
-    def decode(self,GPR):
-        self.stall  = self.decode_unit.run(GPR)
+    def decode(self):
+        self.stall  = self.decode_unit.run(self.GPR,self.scoreboard)
         
-
-    def execute(self,GPR):
-        self.execute_unit.run(GPR)
+    def execute(self):
+        self.execute_unit.run(self.GPR,self.scoreboard)
         
-
-    def memory(self,data_memory,GPR):
-        self.memory_unit.run(data_memory,GPR)
-        
-    
-    def writeback(self,GPR):
-        self.writeback_unit.run(GPR)
-        
-    
+    def memory(self):
+        self.memory_unit.run(self.data_memory,self.GPR)
+            
+    def writeback(self):
+        self.writeback_unit.run(self.GPR)
+            
     def transfer_sig(self):
-        self.writeback_unit.signals = self.memory_unit.signals
-        self.writeback_unit.registers = self.memory_unit.registers
+        self.writeback_unit.signals = self.memory_unit.signals.copy()
+        self.writeback_unit.registers = self.memory_unit.registers.copy()
 
-        self.memory_unit.signals = self.execute_unit.signals
-        self.memory_unit.registers = self.execute_unit.registers
+        self.memory_unit.signals = self.execute_unit.signals.copy()
+        self.memory_unit.registers = self.execute_unit.registers.copy()
 
-        self.execute_unit.signals=self.decode_unit.signals 
-        self.execute_unit.registers=self.decode_unit.registers 
+        
 
         if(not self.stall):
-            self.decode_unit.signals = self.fetch_unit.signals
-            self.decode_unit.registers = self.fetch_unit.registers
+            self.execute_unit.signals=self.decode_unit.signals.copy()
+            self.execute_unit.registers=self.decode_unit.registers.copy() 
 
+            self.decode_unit.signals = self.fetch_unit.signals.copy()
+            self.decode_unit.registers = self.fetch_unit.registers.copy()
+        
+        else:
+            self.execute_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
+            self.execute_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
 
 
@@ -250,48 +303,27 @@ class CPU():
         print("Cycle no: ", self.clock)
         global file1
         if(not self.stall):
-            self.fetch(self.instruction_memory,self.PC)
+            self.fetch()
             self.PC = self.PC+4
-            self.stall  = self.decode(self.GPR)
         else:
             print("Stalling on decode")
-        self.execute(self.GPR)
-        self.memory(self.data_memory,self.GPR)
-        self.writeback(self.GPR)
+        self.decode()
+        self.execute()
+        self.memory()
+        self.writeback()
         self.transfer_sig()
 
         
-        # print("signals")
-        # print(self.writeback_unit.signals)
         print("GPR")
         print(self.GPR.GPR)
-        # print("registers")
-        # print(self.writeback_unit.registers)
+        print("Scoreboard")
+        print(self.scoreboard)
         print("data memory")
         for i in range(len(self.data_memory.data_memory)):
             if(self.data_memory.read_memory(i)!=0):
                 print(i,' : ',self.data_memory.read_memory(i))
         
-        file1.write("Cycle no: "+ str(self.clock)+'\n')
-        file1.write("signals"+'\n')
-        file1.write(json.dumps(self.writeback_unit.signals))
-        file1.write('\n')
-        file1.write("GPR\n")
-        file1.write(json.dumps(self.GPR.GPR))
-        file1.write('\n')
-        file1.write("registers\n")
-        file1.write(json.dumps(self.writeback_unit.registers))
-        file1.write('\n')
-        file1.write("data memory\n")
-        for i in range(len(self.data_memory.data_memory)):
-            if(self.data_memory.read_memory(i)!=0):
-                file1.write(str(i)+' : '+str(self.data_memory.read_memory(i))+'\n')
-        file1.write('\n')
-        file1.write('\n')
-        file1.write('\n')
-        print()
-        print()
-        print()
+        
         self.clock +=1
 
 
@@ -309,7 +341,7 @@ with open(sys.argv[1]) as file:
 
 for i in range(len(lines)):
     instruction_memory.write_memory(4*i,lines[i][0:32])
-
+# for i in range(5):
 while(my_cpu.PC<4*len(lines)):
     my_cpu.cpu_clock_edge()
 file1.write("Ending memory state: \n")
@@ -317,3 +349,27 @@ for i in range(len(data_memory.data_memory)):
     file1.write(str(i)+' : '+str(data_memory.read_memory(i))+'\n')
 file1.write('\n')
 file1.close()
+
+
+
+
+# file1.write("Cycle no: "+ str(self.clock)+'\n')
+#         file1.write("signals"+'\n')
+#         file1.write(json.dumps(self.writeback_unit.signals))
+#         file1.write('\n')
+#         file1.write("GPR\n")
+#         file1.write(json.dumps(self.GPR.GPR))
+#         file1.write('\n')
+#         file1.write("registers\n")
+#         file1.write(json.dumps(self.writeback_unit.registers))
+#         file1.write('\n')
+#         file1.write("data memory\n")
+#         for i in range(len(self.data_memory.data_memory)):
+#             if(self.data_memory.read_memory(i)!=0):
+#                 file1.write(str(i)+' : '+str(self.data_memory.read_memory(i))+'\n')
+#         file1.write('\n')
+#         file1.write('\n')
+#         file1.write('\n')
+#         print()
+#         print()
+#         print()
