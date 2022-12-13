@@ -50,16 +50,14 @@ class Decode():
     scoreboard=[]
 
     def run(self,GPR,scoreboard):
-        
+        stash = False
         print("DECODE: ",self.registers['ir'])
         if(self.registers['ir']==0):
-            return False
+            return (False,stash,None)
         if(self.registers['ir']=='00000000000000000000000000000000'):
-            return False
+            return (False,stash,None)
         self.signals = dict.fromkeys(self.signals, 0)
 
-        if(False):
-            return True
         self.registers['rd'] = int(self.registers['ir'][20:25],2)
         self.registers['rs1'] = int(self.registers['ir'][12:17],2)
         self.registers['rs2'] = int(self.registers['ir'][7:12],2)
@@ -80,32 +78,32 @@ class Decode():
             if(self.registers['ir'][17:20]=='111'):
                 self.signals['isAnd']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='110'):
                 self.signals['isOr']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0000000')):
                 self.signals['isAdd']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0100000')):
                 self.signals['isSub']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='001'):
                 self.signals['isSLL']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][17:20]=='101'):
                 self.signals['isSRA']=1
                 if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
-                    return True
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
         
         elif (self.registers['ir'][25:32]=='1111011'):
@@ -123,13 +121,14 @@ class Decode():
                 self.registers['immx'] = self.registers['immx']*2
                 if(GPR.read_reg(self.registers['rs1'])==GPR.read_reg(self.registers['rs2'])):
                     self.signals['isBEQ']=1
+                    stash = True
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
         print("signals")
         print(self.signals)
         print("registers")
         print(self.registers)
-        return False
+        return (False,stash,self.registers['immx'])
         
 class Execute():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
@@ -252,7 +251,8 @@ class CPU():
     memory_unit=0
     writeback_unit=0
     stall = False
-
+    stash = False
+    branch_target=0
 
     def __init__(self, im, dm, reg):
         self.instruction_memory = im
@@ -269,7 +269,7 @@ class CPU():
         self.fetch_unit.run(self.instruction_memory,self.PC)
 
     def decode(self):
-        self.stall  = self.decode_unit.run(self.GPR,self.scoreboard)
+        (self.stall,self.stash,self.branch_target)  = self.decode_unit.run(self.GPR,self.scoreboard)
         
     def execute(self):
         self.execute_unit.run(self.GPR,self.scoreboard)
@@ -292,9 +292,14 @@ class CPU():
         if(not self.stall):
             self.execute_unit.signals=self.decode_unit.signals.copy()
             self.execute_unit.registers=self.decode_unit.registers.copy() 
+            if(not self.stash):
+                self.decode_unit.signals = self.fetch_unit.signals.copy()
+                self.decode_unit.registers = self.fetch_unit.registers.copy()
+            else:
+                self.decode_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
+'isSTORENOC':0, 'isLOADNOC':0}
+                self.decode_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
-            self.decode_unit.signals = self.fetch_unit.signals.copy()
-            self.decode_unit.registers = self.fetch_unit.registers.copy()
         
         else:
             self.execute_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
@@ -308,6 +313,10 @@ class CPU():
         print("Cycle no: ", self.clock)
         global file1
         if(not self.stall):
+            if(self.stash):
+                print("reached stash")
+                self.PC = self.PC+self.branch_target
+            print("FETCHING from ",self.PC)
             self.fetch()
             self.PC = self.PC+4
         else:
@@ -339,7 +348,7 @@ instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
 for i in range(32):
-    GPR.write_reg(i,i)
+    GPR.write_reg(i,1)
 my_cpu = CPU(instruction_memory,data_memory,GPR)
 with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
