@@ -27,8 +27,7 @@ class DataMemory(): #word addressable (length=5000 words)
         return self.data_memory[location]
 
 class Fetch():
-    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
@@ -42,8 +41,7 @@ class Fetch():
         print(self.registers)
 
 class Decode():
-    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
 
@@ -131,8 +129,7 @@ class Decode():
         return (False,stash,self.registers['immx'])
         
 class Execute():
-    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
 
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
@@ -178,19 +175,32 @@ class Execute():
             scoreboard.value[self.registers['rd']] = self.registers['res']
 
 class Memory():
-    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
-    clock =0
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
+    delay =1
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
-
+    current_left = 1
+    def __init__(self, latency):
+        self.delay=latency
+        self.current_left=latency
     def run(self,data_memory,GPR,scoreboard):
         print("MEMORY")
         if(self.registers['ir']==0):
+            self.current_left=0
             return
+        if(not(self.signals['isST'] or self.signals['isLW'] or self.signals['isLOADNOC'] or self.signals['isSTORENOC'])):
+            self.current_left=0
+            print("signals")
+            print(self.signals)
+            print("registers")
+            print(self.registers)
+            print("cycles left: ",self.current_left)
+            return
+        self.current_left = self.current_left-1
         print("signals")
         print(self.signals)
         print("registers")
         print(self.registers)
+        print("cycles left: ",self.current_left)
         if(self.signals['isLW']):
             self.registers['mem_res'] = data_memory.read_memory(self.registers['res']>>2)
             scoreboard.pending[self.registers['rd']] = False
@@ -202,8 +212,7 @@ class Memory():
             data_memory.write_memory(4100,1) # 4010 hex byte = 16^3+4 decimal word (4bytes)
 
 class Writeback():
-    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
+    signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
@@ -262,7 +271,7 @@ class CPU():
         self.fetch_unit= Fetch()
         self.decode_unit= Decode()
         self.execute_unit= Execute()
-        self.memory_unit = Memory()
+        self.memory_unit = Memory(3)
         self.writeback_unit= Writeback()
 
     def fetch(self):
@@ -281,30 +290,33 @@ class CPU():
         self.writeback_unit.run(self.GPR)
             
     def transfer_sig(self):
-        self.writeback_unit.signals = self.memory_unit.signals.copy()
-        self.writeback_unit.registers = self.memory_unit.registers.copy()
 
-        self.memory_unit.signals = self.execute_unit.signals.copy()
-        self.memory_unit.registers = self.execute_unit.registers.copy()
+        if(self.memory_unit.current_left>0): # we need to stall memory in next cycle, give NOP to writeback 
+            self.writeback_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0, 'isSTORENOC':0, 'isLOADNOC':0}
+            self.writeback_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+        else:  #propagate memory signals to writeback
+            self.writeback_unit.signals = self.memory_unit.signals.copy()
+            self.writeback_unit.registers = self.memory_unit.registers.copy()
+            self.memory_unit.signals = self.execute_unit.signals.copy()
+            self.memory_unit.registers = self.execute_unit.registers.copy()
+            self.memory_unit.current_left = self.memory_unit.delay
 
-        
-
-        if(not self.stall):
-            self.execute_unit.signals=self.decode_unit.signals.copy()
-            self.execute_unit.registers=self.decode_unit.registers.copy() 
-            if(not self.stash):
-                self.decode_unit.signals = self.fetch_unit.signals.copy()
-                self.decode_unit.registers = self.fetch_unit.registers.copy()
+            if(self.stall):
+                self.execute_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0, 'isSTORENOC':0, 'isLOADNOC':0}
+                self.execute_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
             else:
-                self.decode_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
-                self.decode_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+                self.execute_unit.signals=self.decode_unit.signals.copy()
+                self.execute_unit.registers=self.decode_unit.registers.copy() 
+                if(not self.stash):
+                    self.decode_unit.signals = self.fetch_unit.signals.copy()
+                    self.decode_unit.registers = self.fetch_unit.registers.copy()
+                else:
+                    self.decode_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0, 'isSTORENOC':0, 'isLOADNOC':0}
+                    self.decode_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
 
         
-        else:
-            self.execute_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,
-'isSTORENOC':0, 'isLOADNOC':0}
-            self.execute_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+            
+            
 
 
 
@@ -312,20 +324,33 @@ class CPU():
     def cpu_clock_edge(self):
         print("Cycle no: ", self.clock)
         global file1
-        if(not self.stall):
+        #if stalling in memory stage execute only memory and writeback
+        if(self.memory_unit.current_left<self.memory_unit.delay):
+            self.memory()
+            self.writeback()
+            self.transfer_sig()
+        
+        #elif stalling in decode, execute decode to writeback only (stash can't be issued if decode is stalling)
+        elif(self.stall):
+            self.decode()
+            self.execute()
+            self.memory()
+            self.writeback()
+            self.transfer_sig()
+        
+        #no stalls
+        else:
             if(self.stash):
                 print("reached stash")
                 self.PC = self.PC+self.branch_target
             print("FETCHING from ",self.PC)
             self.fetch()
             self.PC = self.PC+4
-        else:
-            print("Stalling on decode")
-        self.decode()
-        self.execute()
-        self.memory()
-        self.writeback()
-        self.transfer_sig()
+            self.decode()
+            self.execute()
+            self.memory()
+            self.writeback()
+            self.transfer_sig()
 
         
         print("GPR")
