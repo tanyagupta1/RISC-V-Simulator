@@ -347,12 +347,14 @@ class CPU():
         global file1
         #if stalling in memory stage execute only memory and writeback
         if(self.memory_unit.current_left<self.memory_unit.delay):
+            file1.write("StallM "+str(self.clock)+"\n")
             self.memory()
             self.writeback()
             self.transfer_sig()
         
         #elif stalling in decode, execute decode to writeback only (stash can't be issued if decode is stalling)
         elif(self.stall):
+            file1.write("StallD "+str(self.clock)+"\n")
             self.decode()
             self.execute()
             self.memory()
