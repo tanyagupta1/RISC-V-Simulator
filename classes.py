@@ -82,34 +82,34 @@ class Decode():
         if(self.registers['ir'][25:32]=='0110011'):
             if(self.registers['ir'][17:20]=='111'):
                 self.signals['isAnd']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if(self.registers['ir'][17:20]=='110'):
                 self.signals['isOr']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0000000')):
                 self.signals['isAdd']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if((self.registers['ir'][17:20]=='000') and (self.registers['ir'][0:7]=='0100000')):
                 self.signals['isSub']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if(self.registers['ir'][17:20]=='001'):
                 self.signals['isSLL']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if(self.registers['ir'][17:20]=='101'):
                 self.signals['isSRA']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
         
         elif (self.registers['ir'][25:32]=='1111011'):
             self.signals['isSTORENOC']=1
@@ -117,20 +117,20 @@ class Decode():
             self.signals['isImm']=1
             if(self.registers['ir'][25:32]=='0000011'):
                 self.signals['isLW']=1
-                if(scoreboard.pending[self.registers['rs1']] ):
+                if(scoreboard.current_writes[self.registers['rs1']]>0):
                     return (True,stash,None)
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if(self.registers['ir'][25:32]=='0100011'):
                 self.signals['isST']=1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
             if(self.registers['ir'][25:32]=='0010011'):
-                if(scoreboard.pending[self.registers['rs1']]):
+                if(scoreboard.current_writes[self.registers['rs1']]>0):
                     return (True,stash,None)
                 self.signals['isAdd']=1
-                scoreboard.pending[self.registers['rd']]=True
+                scoreboard.current_writes[self.registers['rd']]+=1
             if(self.registers['ir'][25:32]=='1100011'):
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
                 self.registers['immx'] = self.registers['immx']*2
                 if(GPR.read_reg(self.registers['rs1'])==GPR.read_reg(self.registers['rs2'])):
@@ -138,7 +138,7 @@ class Decode():
                     stash = True
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
-                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
         print("signals")
         print(self.signals)
@@ -170,27 +170,27 @@ class Execute():
         if(self.signals['isAdd'] or self.signals['isLW'] or self.signals['isST'] or self.signals['isLOADNOC']):
             self.registers['res'] = op1+op2
             if(self.signals['isAdd']):
-                scoreboard.pending[self.registers['rd']] = False
+                scoreboard.current_writes[self.registers['rd']] -=1
                 scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSub']):
             self.registers['res'] = op1-op2
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isAnd']):
             self.registers['res'] = op1 & op2
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isOr']):
             self.registers['res'] = op1 | op2
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSLL']):
             self.registers['res'] = op1 << op2
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['res']
         if(self.signals['isSRA']):
             self.registers['res'] = op1 >> op2
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['res']
 
 class Memory():
@@ -224,7 +224,7 @@ class Memory():
         if(self.signals['isLW'] and (self.current_left==0)):
             self.registers['mem_res'] = data_memory.read_memory(self.registers['res']>>2)
             file1.write("MA:"+str(self.registers['res']>>2)+'\n')
-            scoreboard.pending[self.registers['rd']] = False
+            scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['mem_res']
         if((self.signals['isST'] or self.signals['isLOADNOC']) and (self.current_left==0)):
             # self.data_memory[res>>2] = self.GPR[registers['rs2']]
@@ -258,7 +258,7 @@ class Writeback():
         #     self.registers['pc'] = self.registers['pc']+4
 
 class Scoreboard():
-    pending = [False]*32
+    current_writes = [0]*32
     value = [0]*32
 
     def __init__(self,GPR):
@@ -267,7 +267,7 @@ class Scoreboard():
     
     def __str__(self):
         for i in range(32):
-            print("reg: ",i," value: ",self.value[i]," pending: ",self.pending[i])
+            print("reg: ",i," value: ",self.value[i]," pending: ",self.current_writes[i])
         return ""
 
 
@@ -292,7 +292,7 @@ class CPU():
         self.data_memory = dm
         self.GPR = reg
         self.scoreboard = Scoreboard(self.GPR)
-        self.fetch_unit= Fetch(2)
+        self.fetch_unit= Fetch(1)
         self.decode_unit= Decode()
         self.execute_unit= Execute()
         self.memory_unit = Memory(3)
