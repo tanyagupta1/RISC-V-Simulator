@@ -37,10 +37,12 @@ class Fetch():
         self.current_left=latency
     def run(self,instruction_memory,pc):
         self.current_left = self.current_left-1
+        if(self.current_left==0):
+            file1.write("IM ACCESS: "+str(pc)+'\n')
         PC = pc
         self.registers['ir'] = instruction_memory.read_memory(PC)
         file1.write("FETCH: "+str(self.registers['ir'])+'\n')
-        print("FETCH")
+        print("FETCH current left",self.current_left)
         print("signals")
         print(self.signals)
         print("registers")
@@ -133,7 +135,7 @@ class Decode():
                 if((scoreboard.current_writes[self.registers['rs1']]>0) or (scoreboard.current_writes[self.registers['rs2']]>0)):
                     return (True,stash,None)
                 self.registers['immx'] = self.registers['immx']*2
-                if(GPR.read_reg(self.registers['rs1'])==GPR.read_reg(self.registers['rs2'])):
+                if(scoreboard.value[self.registers['rs1']]==scoreboard.value[self.registers['rs2']]):
                     self.signals['isBEQ']=1
                     stash = True
             if(self.registers['ir'][25:32]=='1111111'):
@@ -203,8 +205,8 @@ class Memory():
         self.current_left=latency
     def run(self,data_memory,GPR,scoreboard):
         file1.write("MEMORY: "+str(self.registers['ir'])+'\n')
+        print("MEMORY")
         if(self.registers['ir']==0):
-            print("NOP in memory")
             self.current_left=0
             return
         if(not(self.signals['isST'] or self.signals['isLW'] or self.signals['isLOADNOC'] or self.signals['isSTORENOC'])):
@@ -227,8 +229,8 @@ class Memory():
             scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['mem_res']
         if((self.signals['isST'] or self.signals['isLOADNOC']) and (self.current_left==0)):
-            # self.data_memory[res>>2] = self.GPR[registers['rs2']]
-            data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
+            # data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
+            data_memory.write_memory(self.registers['res']>>2,scoreboard.value[self.registers['rs2']])
             file1.write("MA:"+str(self.registers['res']>>2)+'\n')
         if(self.signals['isSTORENOC']and (self.current_left==0)):
             file1.write("MA:"+str(4100)+'\n')
@@ -292,7 +294,7 @@ class CPU():
         self.data_memory = dm
         self.GPR = reg
         self.scoreboard = Scoreboard(self.GPR)
-        self.fetch_unit= Fetch(1)
+        self.fetch_unit= Fetch(2)
         self.decode_unit= Decode()
         self.execute_unit= Execute()
         self.memory_unit = Memory(3)
