@@ -219,14 +219,17 @@ class Memory():
         print("registers")
         print(self.registers)
         print("cycles left: ",self.current_left)
-        if(self.signals['isLW']):
+        if(self.signals['isLW'] and (self.current_left==0)):
             self.registers['mem_res'] = data_memory.read_memory(self.registers['res']>>2)
+            file1.write("MA:"+str(self.registers['res']>>2)+'\n')
             scoreboard.pending[self.registers['rd']] = False
             scoreboard.value[self.registers['rd']] = self.registers['mem_res']
-        if(self.signals['isST'] or self.signals['isLOADNOC']):
+        if((self.signals['isST'] or self.signals['isLOADNOC']) and (self.current_left==0)):
             # self.data_memory[res>>2] = self.GPR[registers['rs2']]
             data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
-        if(self.signals['isSTORENOC']):
+            file1.write("MA:"+str(self.registers['res']>>2)+'\n')
+        if(self.signals['isSTORENOC']and (self.current_left==0)):
+            file1.write("MA:"+str(4100)+'\n')
             data_memory.write_memory(4100,1) # 4010 hex byte = 16^3+4 decimal word (4bytes)
 
 class Writeback():
