@@ -30,14 +30,13 @@ class Fetch():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
-    # delay =1
-    # current_left=1
-    # def __init__(self, latency):
-    #     self.delay=latency
-    #     self.current_left=latency
-    
+    delay =1
+    current_left = 1
+    def __init__(self, latency):
+        self.delay=latency
+        self.current_left=latency
     def run(self,instruction_memory,pc):
-        # self.current_left = self.current_left-1
+        self.current_left = self.current_left-1
         PC = pc
         self.registers['ir'] = instruction_memory.read_memory(PC)
         file1.write("FETCH: "+str(self.registers['ir'])+'\n')
@@ -293,7 +292,7 @@ class CPU():
         self.data_memory = dm
         self.GPR = reg
         self.scoreboard = Scoreboard(self.GPR)
-        self.fetch_unit= Fetch()
+        self.fetch_unit= Fetch(2)
         self.decode_unit= Decode()
         self.execute_unit= Execute()
         self.memory_unit = Memory(3)
@@ -332,9 +331,15 @@ class CPU():
             else:
                 self.execute_unit.signals=self.decode_unit.signals.copy()
                 self.execute_unit.registers=self.decode_unit.registers.copy() 
-                if(not self.stash):
+                if(self.stash):
+                    self.decode_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0, 'isSTORENOC':0, 'isLOADNOC':0}
+                    self.decode_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
+                    self.fetch_unit.current_left = self.fetch_unit.delay
+
+                elif(self.fetch_unit.current_left==0):
                     self.decode_unit.signals = self.fetch_unit.signals.copy()
                     self.decode_unit.registers = self.fetch_unit.registers.copy()
+                    self.fetch_unit.current_left = self.fetch_unit.delay
                 else:
                     self.decode_unit.signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0, 'isSTORENOC':0, 'isLOADNOC':0}
                     self.decode_unit.registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0,'mem_res':0,'res':0}
@@ -372,13 +377,13 @@ class CPU():
                 self.PC = self.PC+self.branch_target
             print("FETCHING from ",self.PC)
             self.fetch()
-            self.PC = self.PC+4
             self.decode()
             self.execute()
             self.memory()
             self.writeback()
             self.transfer_sig()
-
+            if(self.fetch_unit.current_left==self.fetch_unit.delay):
+                self.PC = self.PC+4
         
         print("GPR")
         print(self.GPR.GPR)
@@ -402,7 +407,7 @@ instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
 for i in range(32):
-    GPR.write_reg(i,i)
+    GPR.write_reg(i,1)
 my_cpu = CPU(instruction_memory,data_memory,GPR)
 with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
