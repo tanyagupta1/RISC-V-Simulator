@@ -30,8 +30,14 @@ class Fetch():
     signals={'isImm':0,'isAdd':0,'isSub':0,'isAnd':0,'isOr':0,'isSLL':0,'isSRA':0,'isLW':0,'isST':0,'isBEQ':0,'isSTORENOC':0, 'isLOADNOC':0}
     clock =0
     registers={'ir':0,'I':0,'rd':0,'rs1':0,'rs2':0,'immx':0}
-
+    # delay =1
+    # current_left=1
+    # def __init__(self, latency):
+    #     self.delay=latency
+    #     self.current_left=latency
+    
     def run(self,instruction_memory,pc):
+        # self.current_left = self.current_left-1
         PC = pc
         self.registers['ir'] = instruction_memory.read_memory(PC)
         print("FETCH")
@@ -110,18 +116,29 @@ class Decode():
             self.signals['isImm']=1
             if(self.registers['ir'][25:32]=='0000011'):
                 self.signals['isLW']=1
+                if(scoreboard.pending[self.registers['rs1']] ):
+                    return (True,stash,None)
                 scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][25:32]=='0100011'):
                 self.signals['isST']=1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return (True,stash,None)
             if(self.registers['ir'][25:32]=='0010011'):
+                if(scoreboard.pending[self.registers['rs1']]):
+                    return (True,stash,None)
                 self.signals['isAdd']=1
+                scoreboard.pending[self.registers['rd']]=True
             if(self.registers['ir'][25:32]=='1100011'):
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return (True,stash,None)
                 self.registers['immx'] = self.registers['immx']*2
                 if(GPR.read_reg(self.registers['rs1'])==GPR.read_reg(self.registers['rs2'])):
                     self.signals['isBEQ']=1
                     stash = True
             if(self.registers['ir'][25:32]=='1111111'):
                 self.signals['isLOADNOC'] = 1
+                if(scoreboard.pending[self.registers['rs1']] or scoreboard.pending[self.registers['rs2']]):
+                    return (True,stash,None)
         print("signals")
         print(self.signals)
         print("registers")
@@ -185,6 +202,7 @@ class Memory():
     def run(self,data_memory,GPR,scoreboard):
         print("MEMORY")
         if(self.registers['ir']==0):
+            print("NOP in memory")
             self.current_left=0
             return
         if(not(self.signals['isST'] or self.signals['isLW'] or self.signals['isLOADNOC'] or self.signals['isSTORENOC'])):
@@ -373,7 +391,7 @@ instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
 for i in range(32):
-    GPR.write_reg(i,1)
+    GPR.write_reg(i,i)
 my_cpu = CPU(instruction_memory,data_memory,GPR)
 with open(sys.argv[1]) as file:
     lines = [line.rstrip() for line in file]
