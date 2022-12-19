@@ -40,6 +40,7 @@ class Fetch():
         # self.current_left = self.current_left-1
         PC = pc
         self.registers['ir'] = instruction_memory.read_memory(PC)
+        file1.write("FETCH: "+str(self.registers['ir'])+'\n')
         print("FETCH")
         print("signals")
         print(self.signals)
@@ -56,6 +57,7 @@ class Decode():
     def run(self,GPR,scoreboard):
         stash = False
         print("DECODE: ",self.registers['ir'])
+        file1.write("DECODE: "+str(self.registers['ir'])+'\n')
         if(self.registers['ir']==0):
             return (False,stash,None)
         if(self.registers['ir']=='00000000000000000000000000000000'):
@@ -153,6 +155,7 @@ class Execute():
 
     def run(self,GPR,scoreboard):
         print("EXECUTE")
+        file1.write("EXECUTE: "+str(self.registers['ir'])+'\n')
         if(self.registers['ir']==0):
             return
         print("signals")
@@ -200,7 +203,7 @@ class Memory():
         self.delay=latency
         self.current_left=latency
     def run(self,data_memory,GPR,scoreboard):
-        print("MEMORY")
+        file1.write("MEMORY: "+str(self.registers['ir'])+'\n')
         if(self.registers['ir']==0):
             print("NOP in memory")
             self.current_left=0
@@ -239,6 +242,7 @@ class Writeback():
 
     def run(self,GPR):
         print("WRITEBACK")
+        file1.write("WRITEBACK: "+str(self.registers['ir'])+'\n')
         if(self.registers['ir']==0):
             return
         print("signals")
@@ -343,8 +347,8 @@ class CPU():
 
 
     def cpu_clock_edge(self):
+        file1.write("Cycle no: "+str(self.clock)+'\n')
         print("Cycle no: ", self.clock)
-        global file1
         #if stalling in memory stage execute only memory and writeback
         if(self.memory_unit.current_left<self.memory_unit.delay):
             file1.write("StallM "+str(self.clock)+"\n")
@@ -385,7 +389,9 @@ class CPU():
             if(self.data_memory.read_memory(i)!=0):
                 print(i,' : ',self.data_memory.read_memory(i))
         
-        
+        file1.write("GPR\n")
+        file1.write(json.dumps(self.GPR.GPR))
+        file1.write('\n')
         self.clock +=1
 
 
