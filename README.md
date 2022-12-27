@@ -1,5 +1,5 @@
-# CA-Project
-A cycle-accurate simulator of a 5-stage RISC CPU. 
+# RISC-V Simulator
+A cycle-accurate simulator of a 5-stage RISC-V CPU. 
 ## ISA
 It implements 10 instructions from the RISC-V ISA -
 * AND
