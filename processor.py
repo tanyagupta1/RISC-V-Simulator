@@ -163,8 +163,6 @@ class Execute():
         print(self.signals)
         print("registers")
         print(self.registers)
-        # op1 = GPR.read_reg(self.registers['rs1'])
-        # op2 = GPR.read_reg(self.registers['rs2'])
         op1 = scoreboard.value[self.registers['rs1']]
         op2 = scoreboard.value[self.registers['rs2']]
         if(self.signals['isImm']):
@@ -229,7 +227,6 @@ class Memory():
             scoreboard.current_writes[self.registers['rd']] -=1
             scoreboard.value[self.registers['rd']] = self.registers['mem_res']
         if((self.signals['isST'] or self.signals['isLOADNOC']) and (self.current_left==0)):
-            # data_memory.write_memory(self.registers['res']>>2,GPR.read_reg(self.registers['rs2']))
             data_memory.write_memory(self.registers['res']>>2,scoreboard.value[self.registers['rs2']])
             file1.write("MA:"+str(self.registers['res']>>2)+'\n')
         if(self.signals['isSTORENOC']and (self.current_left==0)):
@@ -254,10 +251,6 @@ class Writeback():
             GPR.write_reg(self.registers['rd'],self.registers['mem_res'])
         if(self.signals['isOr']or self.signals['isAnd'] or self.signals['isSLL'] or self.signals['isSRA'] or self.signals['isAdd'] or self.signals['isSub']):
             GPR.write_reg(self.registers['rd'],self.registers['res'])
-        # if(self.signals['isBEQ']==1):
-        #     self.registers['pc'] = self.registers['pc']+self.registers['immx']
-        # else:
-        #     self.registers['pc'] = self.registers['pc']+4
 
 class Scoreboard():
     current_writes = [0]*32
@@ -297,7 +290,7 @@ class CPU():
         self.fetch_unit= Fetch(2)
         self.decode_unit= Decode()
         self.execute_unit= Execute()
-        self.memory_unit = Memory(3)
+        self.memory_unit = Memory(5)
         self.writeback_unit= Writeback()
 
     def fetch(self):
@@ -404,7 +397,7 @@ class CPU():
 
 
 
-file1 = open("myfile.txt", "w")
+file1 = open("logfile.txt", "w")
 instruction_memory = InstructionMemory()
 data_memory = DataMemory()
 GPR = Registers()
@@ -425,26 +418,3 @@ for i in range(len(data_memory.data_memory)):
 file1.write('\n')
 file1.close()
 
-
-
-
-# file1.write("Cycle no: "+ str(self.clock)+'\n')
-#         file1.write("signals"+'\n')
-#         file1.write(json.dumps(self.writeback_unit.signals))
-#         file1.write('\n')
-#         file1.write("GPR\n")
-#         file1.write(json.dumps(self.GPR.GPR))
-#         file1.write('\n')
-#         file1.write("registers\n")
-#         file1.write(json.dumps(self.writeback_unit.registers))
-#         file1.write('\n')
-#         file1.write("data memory\n")
-#         for i in range(len(self.data_memory.data_memory)):
-#             if(self.data_memory.read_memory(i)!=0):
-#                 file1.write(str(i)+' : '+str(self.data_memory.read_memory(i))+'\n')
-#         file1.write('\n')
-#         file1.write('\n')
-#         file1.write('\n')
-#         print()
-#         print()
-#         print()
